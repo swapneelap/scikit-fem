@@ -116,11 +116,35 @@ def from_meshio(m,
     subdomains = {}
     boundaries = {}
 
-    # parse any subdomains from cell_sets
-    if m.cell_sets:
-        subdomains = {k: v[meshio_type].astype(np.int32)
-                      for k, v in m.cell_sets_dict.items()
-                      if meshio_type in v}
+    # HACK: only the names of the physical groups are read
+    cell_index_dict = {k: v for k, v in m.cell_sets_dict.items() if "gmsh" not in k}    
+    
+    # HACK: check if tags are provided to the mesh as integer cell functions
+    # If so, load them as subdomains.
+    subdomain_tag_key = None
+    for key in ["gmsh:physical", "cell_tags"]:
+        if key in m.cell_data_dict:
+            subdomain_tag_key = key
+            break
+
+    # parse any subdomains from cell_sets_dict
+    if cell_index_dict:
+        logger.warning("Hit cell_sets_dict")
+        subdomains = {
+            k: v[meshio_type].astype(np.int32)
+            for k, v in cell_index_dict.items()
+            if meshio_type in v
+        }
+
+    elif subdomain_tag_key:
+        logger.warning("Hit else for cell_sets_dict")
+        cell_type_dict = m.cell_data_dict[subdomain_tag_key]
+        cell_type_arr = cell_type_dict[meshio_type]
+        unique_tags = np.unique(cell_type_arr)
+
+        for tag in unique_tags:
+            subdomains[str(tag)] = np.where(cell_type_arr==tag)[0]
+
 
     # create temporary mesh for matching boundary elements
     mtmp = mesh_type(p, t, validate=False)
