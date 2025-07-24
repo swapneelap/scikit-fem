@@ -129,7 +129,6 @@ def from_meshio(m,
 
     # parse any subdomains from cell_sets_dict
     if cell_index_dict:
-        logger.warning("Hit cell_sets_dict")
         subdomains = {
             k: v[meshio_type].astype(np.int32)
             for k, v in cell_index_dict.items()
@@ -137,7 +136,6 @@ def from_meshio(m,
         }
 
     elif subdomain_tag_key:
-        logger.warning("Hit else for cell_sets_dict")
         cell_type_dict = m.cell_data_dict[subdomain_tag_key]
         cell_type_arr = cell_type_dict[meshio_type]
         unique_tags = np.unique(cell_type_arr)
